@@ -81,15 +81,16 @@ function initLessonRoutes(app) {
         try {
 
             //data validation
-            const validation = await con.query(`select id from modules where id = ?`, [deleteid]);
+            const validation = await con.query(`select id from lessons where id = ?`, [deleteid]);
             if (validation[0].length < 1) {
-                res.json({ error: true, errormessage: "INVALID_MODULE_ID" });
+                res.json({ error: true, errormessage: "INVALID_LESSON_ID" });
                 return;
             }
 
             //delete lesson
-            const data = await con.execute(`delete from modules where id = ?`, [deleteid]);
+            const data = await con.execute(`delete from lessons where id = ?`, [deleteid]);
             res.json(data);
+
         } catch (err) {
             console.log("Deletelesson Error: " + err);
             res.json({ error: true, errormessage: "GENERIC_ERROR" });
@@ -100,7 +101,7 @@ function initLessonRoutes(app) {
         pagenumber = (req.query.pagenumber - 1) * req.query.pagesize;
         pagesize = (req.query.pagenumber * req.query.pagesize) - 1;
         try {
-            const [data] = await con.execute(`select * from modules LIMIT ${pagenumber},${pagesize}`);
+            const [data] = await con.execute(`select * from lessons LIMIT ${pagenumber},${pagesize}`);
 
             res.json(data);
         } catch (err) {
@@ -111,10 +112,12 @@ function initLessonRoutes(app) {
 
     app.get('/getuserlessons', authenticateToken, async (req, res) => {
         try {
-            const [data] = await con.execute(`select distinct m.* from modules m 
-            inner join users_modules um on um.id_module = m.id
-            where um.id_user = ?`, [req.user.userid]);
+            const [data] = await con.execute(`select distinct l.* from lessons l 
+            inner join lessons_presences lp on lp.id_lesson = l.id
+            where lp.id_user = ?`, [req.user.userid]);
+            
             res.json(data);
+
         } catch (err) {
             console.log("Getusersmodules Error:" + err);
             res.json({ error: true, errormessage: "GENERIC_ERROR" });
@@ -127,7 +130,7 @@ function initLessonRoutes(app) {
         //filtrato per anno/mese
     })
 
-    app.post('/generateevents', jsonParser, authenticateToken, async (req, res) => {
+    app.post('/generatelessons', jsonParser, authenticateToken, async (req, res) => {
         let requestbody = req.body;
         //genera degli eventi ripetitivi, da data a data e per quale giorno
     })
