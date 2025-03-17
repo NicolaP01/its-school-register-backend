@@ -73,7 +73,7 @@ function initUserRoutes(app) {
         let requestbody = req.body;
         try {
             var hash = crypto.createHash('sha256').update(requestbody.pwd).digest('hex');
-            const [data] = await con.query(`select u.id, urc.id_role, urc.id_course from users u
+            const data = await con.query(`select u.id, urc.id_role, urc.id_course from users u
             inner join users_roles_courses urc on urc.id_user = u.id
             where u.email = ? and u.password = ? and u.active = 1`, [requestbody.email, hash]);
             if (data.length == 0) {
