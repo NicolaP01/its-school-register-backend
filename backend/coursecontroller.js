@@ -2,24 +2,11 @@ const con = require('./connector');
 const jwt = require('jsonwebtoken');
 var bodyParser = require('body-parser')
 var jsonParser = bodyParser.json()
-
-function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization']
-    const token = authHeader && authHeader.split(' ')[1]
-
-    if (token == null) return res.sendStatus(401)
-
-    jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403)
-        req.user = user
-
-        next()
-    })
-}
+var auth = require('./authentication')
 
 function initCourseRoutes(app) {
 
-    app.post('/createcourse', jsonParser, authenticateToken, async (req, res) => {
+    app.post('/createcourse', jsonParser, auth.authenticateToken, async (req, res) => {
         let requestbody = req.body;
         try {
 
@@ -39,7 +26,7 @@ function initCourseRoutes(app) {
         }
     })
 
-    app.patch('/updatecourse/:id', jsonParser, authenticateToken, async (req, res) => {
+    app.patch('/updatecourse/:id', jsonParser, auth.authenticateToken, async (req, res) => {
         let patchid = req.params.id;
         let requestbody = req.body;
         try {
@@ -68,7 +55,7 @@ function initCourseRoutes(app) {
 
     })
 
-    app.delete('/deletecourse/:id', authenticateToken, async (req, res) => {
+    app.delete('/deletecourse/:id', auth.authenticateToken, async (req, res) => {
         let deleteid = req.params.id;
         try {
 
@@ -89,7 +76,7 @@ function initCourseRoutes(app) {
     })
 
 
-    app.get('/getallcourses', authenticateToken, async (req, res) => {
+    app.get('/getallcourses', auth.authenticateToken, async (req, res) => {
         pagenumber = (req.query.pagenumber - 1) * req.query.pagesize;
         pagesize = (req.query.pagenumber * req.query.pagesize) - 1;
         try {
@@ -102,7 +89,7 @@ function initCourseRoutes(app) {
         }
     })
 
-    app.get('/getusercourses', authenticateToken, async (req, res) => {
+    app.get('/getusercourses', auth.authenticateToken, async (req, res) => {
         try {
             const [data] = await con.execute(`select distinct c.* from users_roles_courses urc 
           inner join courses c on urc.id_course = c.id
@@ -114,7 +101,7 @@ function initCourseRoutes(app) {
         }
     })
 
-    app.post('/linkcourse', jsonParser, authenticateToken, async (req, res) => {
+    app.post('/linkcourse', jsonParser, auth.authenticateToken, async (req, res) => {
         let requestbody = req.body;
         try {
             //data validation
@@ -148,7 +135,7 @@ function initCourseRoutes(app) {
         }
     })
 
-    app.post('/unlinkcourse', jsonParser, authenticateToken, async (req, res) => {
+    app.post('/unlinkcourse', jsonParser, auth.authenticateToken, async (req, res) => {
         let requestbody = req.body;
         try {
             //data validation

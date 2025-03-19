@@ -7,7 +7,6 @@ const defineCourseRoutes = require('./coursecontroller');
 const defineModuleRoutes = require('./modulecontroller');
 const defineLessonRoutes = require('./lessoncontroller');
 
-
 //generate jwt secret key (one time - copy to env variables)
 //let secreykey = require('crypto').randomBytes(64).toString('hex');
 //console.log(secreykey);
@@ -24,6 +23,7 @@ defineUserRoutes(app);
 defineCourseRoutes(app);
 defineModuleRoutes(app);
 defineLessonRoutes(app);
+
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)

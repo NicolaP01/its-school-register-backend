@@ -2,24 +2,11 @@ const con = require('./connector');
 const jwt = require('jsonwebtoken');
 var bodyParser = require('body-parser')
 var jsonParser = bodyParser.json()
-
-function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization']
-    const token = authHeader && authHeader.split(' ')[1]
-
-    if (token == null) return res.sendStatus(401)
-
-    jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403)
-        req.user = user
-
-        next()
-    })
-}
+var auth=require('./authentication');
 
 function initModuleRoutes(app) {
 
-    app.post('/createmodule', jsonParser, authenticateToken, async (req, res) => {
+    app.post('/createmodule', jsonParser, auth.authenticateToken, async (req, res) => {
         let requestbody = req.body;
         try {
 
@@ -39,7 +26,7 @@ function initModuleRoutes(app) {
         }
     })
 
-    app.patch('/updatemodule/:id', jsonParser, authenticateToken, async (req, res) => {
+    app.patch('/updatemodule/:id', jsonParser, auth.authenticateToken, async (req, res) => {
         let patchid = req.params.id;
         let requestbody = req.body;
         try {
@@ -68,7 +55,7 @@ function initModuleRoutes(app) {
 
     })
 
-    app.delete('/deletemodule/:id', authenticateToken, async (req, res) => {
+    app.delete('/deletemodule/:id', auth.authenticateToken, async (req, res) => {
         let deleteid = req.params.id;
         try {
 
@@ -89,7 +76,7 @@ function initModuleRoutes(app) {
     })
 
 
-    app.get('/getallmodules', authenticateToken, async (req, res) => {
+    app.get('/getallmodules', auth.authenticateToken, async (req, res) => {
         pagenumber = (req.query.pagenumber - 1) * req.query.pagesize;
         pagesize = (req.query.pagenumber * req.query.pagesize) - 1;
         try {
@@ -102,7 +89,7 @@ function initModuleRoutes(app) {
         }
     })
 
-    app.get('/getusermodules', authenticateToken, async (req, res) => {
+    app.get('/getusermodules', auth.authenticateToken, async (req, res) => {
         try {
             const [data] = await con.execute(`select distinct m.* from users_modules um 
           inner join modules m on um.id_module = m.id
@@ -114,7 +101,7 @@ function initModuleRoutes(app) {
         }
     })
 
-    app.post('/linkmodule', jsonParser, authenticateToken, async (req, res) => {
+    app.post('/linkmodule', jsonParser, auth.authenticateToken, async (req, res) => {
         let requestbody = req.body;
         try {
             //data validation
@@ -143,7 +130,7 @@ function initModuleRoutes(app) {
         }
     })
 
-    app.post('/unlinkmodule', jsonParser, authenticateToken, async (req, res) => {
+    app.post('/unlinkmodule', jsonParser, auth.authenticateToken, async (req, res) => {
         let requestbody = req.body;
         try {
             //data validation
