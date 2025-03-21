@@ -4,11 +4,13 @@ var bodyParser = require('body-parser')
 var jsonParser = bodyParser.json()
 var auth = require('./authentication')
 
+/*
 function addDays(date, days) {
     const newDate = new Date(date);
     newDate.setDate(date.getDate() + days);
     return newDate;
 }
+*/
 
 function initLessonRoutes(app) {
 
@@ -108,20 +110,21 @@ function initLessonRoutes(app) {
     })
 
     app.post('/generatelessons', jsonParser, auth.authenticateToken, async (req, res) => {
-        let currentdate = new Date(req.body.startdate);
-        let enddate = new Date(req.body.enddate)
+        let requestbody = req.body;
+        let weekday = requestbody.day;
+        let currentdate = new Date(requestbody.startdate);
+        let enddate = new Date(requestbody.enddate)
         let tomorrow = new Date();
-        let weekday = req.body.day;
         try {
             let insertedLessons = [];
 
-            while (currentdate.getDate() <= enddate.getDate()) {
+            while (currentdate <= enddate) {
                 tomorrow.setDate(currentdate.getDate() + 1);
                 currentdate = tomorrow;
                 if (currentdate.getDay() == weekday) {
-                    let startdate = new Date(currentdate.getFullYear(), currentdate.getMonth(), currentdate.getDate(), req.body.starthour, req.body.startminute);
-                    let finaldate = new Date(enddate.getFullYear(), enddate.getMonth(), enddate.getDate(), req.body.endhour, req.body.endminute)
-                    const [data] = await con.execute(`insert into lessons (startdate,enddate,argument,note) values (?,?,?,?)`, [startdate, finaldate, null, null]);
+                    let startdate = new Date(currentdate.getFullYear(), currentdate.getMonth(), currentdate.getDate(), requestbody.starthour, requestbody.startminute);
+                    let finaldate = new Date(startdate.getFullYear(), startdate.getMonth(), startdate.getDate(), requestbody.endhour, requestbody.endminute)
+                    const [data] = await con.execute(`insert into lessons (startdate,enddate,argument,note,id_module) values (?,?,?,?,?)`, [startdate, finaldate, null, null, requestbody.id_module]);
                     insertedLessons.push(data);
                 }
             }
@@ -135,25 +138,67 @@ function initLessonRoutes(app) {
 
     app.post('/signpresence', jsonParser, auth.authenticateToken, async (req, res) => {
         let requestbody = req.body;
-        //firma presenza
-    })
+        let currentdate = new Date();
+        //let utc1 = new Date(currentdate.getFullYear(), currentdate.getMonth(), currentdate.getDate(), currentdate.getHours() + 1, currentdate.getMinutes(), currentdate.getSeconds());
+        try {
+            const [validation] = await con.query(`select * from lesson_presence where id_lessons = ? and id_user = ?`, [requestbody.id_lessons, requestbody.id_user]);
+            //console.log(validation.length);
+            if (validation.length > 0) {
+                res.json({ error: true, errormessage: "USER_ALREADY_SIGNED" });
+                return;
+            }
+            else {
+                //firma presenza
+                const [data] = await con.execute(`insert into lesson_presence (id_lessons,id_user,signdate) values (?,?,?)`, [requestbody.id_lessons, requestbody.id_user, currentdate]);
+                res.json(data);
+            }
+        }
+        catch (err) {
+            console.log("signpresence Error:" + err);
+            res.json({ error: true, errormessage: "GENERIC_ERROR" });
+        }
+    });
 
     app.get('/getlessonpresences', jsonParser, auth.authenticateToken, async (req, res) => {
         let requestbody = req.body;
-        //recupera l'elenco delle presenze
-        //dato l'id lezione
+        try {
+            //recupera l'elenco delle presenze
+            //dato l'id lezione
+            const [data] = await con.execute(`select * from lesson_presesence where id_lessons = ?`, [requestbody.id_lessons]);
+            res.json(data);
+
+        } catch (err) {
+            console.log("getlessonpresences Error:" + err);
+            res.json({ error: true, errormessage: "GENERIC_ERROR" });
+        }
     })
 
     app.get('/getuserpresences', jsonParser, auth.authenticateToken, async (req, res) => {
-        let requestbody = req.body;
-        //recupera l'elenco delle presenze
-        //dell'utente corrente, da data a data
+        //let requestbody = req.body;
+        try {
+            //recupera l'elenco delle presenze
+            //dell'utente corrente, da data a data
+            const [data] = await con.execute(`select lp.id_lessons, lp.signdate, u.lastname, u.firstname from lesson_presence lp inner join users u on lp.id_user=u.id where lp.id_user = ? order by lp.id_lessons`, [req.user.userid]);
+            res.json(data);
+
+        } catch (err) {
+            console.log("getuserpresences Error:" + err);
+            res.json({ error: true, errormessage: "GENERIC_ERROR" });
+        }
     })
 
     app.get('/getmodulepresences', jsonParser, auth.authenticateToken, async (req, res) => {
         let requestbody = req.body;
-        //recupera l'elenco delle presenze
-        //per il modulo indicato; opzionale filtro per utente
+        try {
+            //recupera l'elenco delle presenze
+            //per il modulo indicato; opzionale filtro per utente
+            const [data] = await con.execute(`select lp.id_lessons, u.lastname, u.firstname, lp.signdate from lesson_presence lp inner join lessons l on lp.id_lessons=l.id inner join users u on lp.id_user=u.id where l.id_module = ?`, [requestbody.id_module/*, requestbody.lastname, requestbody.firstname*/]); /*and u.lastname = ? and u.firstname = ?*/
+            res.json(data);
+
+        } catch (err) {
+            console.log("getmodulepresences Error:" + err);
+            res.json({ error: true, errormessage: "GENERIC_ERROR" });
+        }
     })
 
     app.get('/calculateuserpresences', jsonParser, auth.authenticateToken, async (req, res) => {
